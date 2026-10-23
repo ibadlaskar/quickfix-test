@@ -1,0 +1,19 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>QuickFix Barak Setup</title><link rel="icon" href="logo.jpg"><link rel="stylesheet" href="style.css"></head>
+<body><div class="login"><img src="logo.jpg" alt="QuickFix Barak"><h1 style="text-align:center">One-time setup</h1>
+<div class="card" id="st"><p>Checking your configuration...</p></div>
+<form class="card" id="f1" hidden><h2>Step 1. Create database tables</h2><p style="margin:0;color:var(--m)">Safe to run more than once.</p><label class="fl">Setup token<input type="password" id="tk" autocomplete="off" required></label><p class="err" id="e1"></p><button class="btn o" style="justify-content:center">Create tables</button></form>
+<form class="card" id="f2" hidden><h2>Step 2. Create the owner account</h2><label class="fl">Your name<input id="nm" required></label><label class="fl">Email<input type="email" id="em" autocomplete="username" required></label><label class="fl">Password (10+ characters)<input type="password" id="pw" minlength="10" autocomplete="new-password" required></label><p class="err" id="e2"></p><button class="btn o" style="justify-content:center">Create owner account</button></form>
+<div class="card" id="done" hidden><h2>All set</h2><p>Setup is complete and closed. Now remove the <b>SETUP_TOKEN</b> variable in Netlify for extra safety.</p><a class="btn o" href="/">Go to admin sign in</a></div></div>
+<script>
+(function(){var $=function(s){return document.querySelector(s)};
+async function api(p,b){var r=await fetch('/api'+p,{method:b?'POST':'GET',headers:{'Content-Type':'application/json','X-QFB':'1'},body:b?JSON.stringify(b):undefined});var d={};try{d=await r.json()}catch(e){}if(!r.ok)throw new Error(d.error||'Failed');return d}
+async function check(){var s;try{s=await api('/setup/status')}catch(e){$('#st').innerHTML='<p class="err">Could not reach the server: '+e.message+'</p>';return}
+ if(!s.configured){$('#st').innerHTML='<p class="err">Server is not configured yet. In Netlify add DATABASE_URL, SESSION_SECRET (32+ characters) and SETUP_TOKEN (12+ characters), then redeploy.</p>';return}
+ if(s.dbError){$('#st').innerHTML='<p class="err">Cannot connect to the database. Check DATABASE_URL.</p>';return}
+ $('#st').hidden=true;
+ if(s.tables&&s.hasAdmin){$('#done').hidden=false;$('#done h2').textContent='Already set up';return}
+ $('#f1').hidden=s.tables&&false;$('#f2').hidden=!s.tables}
+$('#f1').onsubmit=async function(e){e.preventDefault();$('#e1').textContent='';try{var r=await api('/setup',{token:$('#tk').value,action:'migrate'});$('#e1').style.color='var(--g)';$('#e1').textContent=r.message;$('#f2').hidden=false}catch(er){$('#e1').style.color='';$('#e1').textContent=er.message}};
+$('#f2').onsubmit=async function(e){e.preventDefault();$('#e2').textContent='';try{await api('/setup',{token:$('#tk').value,action:'create_admin',name:$('#nm').value,email:$('#em').value,password:$('#pw').value});$('#f1').hidden=true;$('#f2').hidden=true;$('#done').hidden=false}catch(er){$('#e2').textContent=er.message}};
+check()})();
+</script></body></html>
